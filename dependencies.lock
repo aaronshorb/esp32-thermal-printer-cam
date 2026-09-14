@@ -80,6 +80,6 @@ direct_dependencies:
 - espressif/esp32-camera
 - espressif/esp_lcd_ili9341
 - idf
-manifest_hash: af94a83501202a0391ba0b40d59ba59ff8ca5988a27dd886d9c5fed15dbb500d
+manifest_hash: 771973b101446c993ef3f2d87dd11c4fb78c9219b442a5b02e8167ebc0fd01b4
 target: esp32s3
 version: 3.0.0

@@ -1,20 +1,18 @@
 #include "lcd_display.h"
 #include "lcd_pins.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
 #include "driver/spi_master.h"
+
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_ili9341.h"
 
-#include "esp_heap_caps.h"
-#include "jpeg_decoder.h"
-
 #include "esp_lcd_touch.h"
 #include "esp_lcd_touch_xpt2046.h"
 
-#include "freertos/semphr.h"
-
-static uint8_t *preview_buffer;
 
 static SemaphoreHandle_t lcd_transfer_done;
 
@@ -107,15 +105,6 @@ esp_err_t init_lcd(void)
         return err;
     }
 
-    preview_buffer = heap_caps_malloc(
-        LCD_WIDTH * LCD_HEIGHT * sizeof(uint16_t),
-        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT
-    );
-
-    if (preview_buffer == NULL) {
-        return ESP_ERR_NO_MEM;
-    }
-
     return esp_lcd_panel_disp_on_off(panel_handle, true);
 }
 
@@ -196,14 +185,23 @@ bool lcd_touch_read(
         return false;
     }
 
+    esp_lcd_touch_point_data_t point = {0};
     uint8_t point_count = 0;
 
-    return esp_lcd_touch_get_coordinates(
+    esp_err_t err = esp_lcd_touch_get_data(
         touch_handle,
-        x,
-        y,
-        strength,
+        &point,
         &point_count,
         1
     );
+
+    if (err != ESP_OK || point_count == 0) {
+        return false;
+    }
+
+    *x = point.x;
+    *y = point.y;
+    *strength = point.strength;
+
+    return true;
 }

@@ -1,8 +1,10 @@
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/gpio.h"
-#include "sdkconfig.h"
+
 #include "esp_err.h"
 #include "esp_camera.h"
 
@@ -21,6 +23,7 @@ void app_main(void)
     ESP_ERROR_CHECK(init_sd_card());
 
     bool was_touched = false;
+    ESP_ERROR_CHECK(camera_discard_frames(3));
 
     while (1) {
 
@@ -55,12 +58,34 @@ void app_main(void)
         );
 
         if (touched && !was_touched) {
-            esp_err_t save_error = save_photo_to_sd(pic);
-            if (save_error == ESP_OK) {
-                vTaskDelay(pdMS_TO_TICKS(1750));
-            } else {
-                printf("Failed to save photo: %s\n", esp_err_to_name(save_error));
+            esp_camera_fb_return(pic);
+
+            esp_err_t photo_error = camera_set_photo_mode();
+
+            if (photo_error == ESP_OK) {
+                photo_error = camera_discard_frames(3);
             }
+
+            if (photo_error == ESP_OK) {
+                camera_fb_t *photo = esp_camera_fb_get();
+
+                if (photo == NULL) {
+                    photo_error = ESP_FAIL;
+                } else {
+                    photo_error = save_photo_to_sd(photo);
+                    esp_camera_fb_return(photo);
+                }
+            }
+
+            if (photo_error != ESP_OK) {
+                printf("Failed to save photo: %s\n", esp_err_to_name(photo_error));
+            }
+
+            ESP_ERROR_CHECK(camera_set_preview_mode());
+            ESP_ERROR_CHECK(camera_discard_frames(3));
+            
+            was_touched = touched;
+            continue;
         }
         
         was_touched = touched;

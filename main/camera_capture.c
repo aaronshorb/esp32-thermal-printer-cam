@@ -1,15 +1,11 @@
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
-#include "sdkconfig.h"
+#include "camera_capture.h"
+
+#include "camera_pins.h"
+
 #include "esp_err.h"
 #include "esp_camera.h"
 
-#include "camera_capture.h"
-#include "camera_pins.h"
-
-static const camera_config_t camera_config = {
+static const camera_config_t preview_config = {
     .pin_pwdn = CAM_PIN_PWDN,
     .pin_reset = CAM_PIN_RESET,
     .pin_xclk = CAM_PIN_XCLK,
@@ -42,10 +38,31 @@ static const camera_config_t camera_config = {
 };
 
 esp_err_t init_camera(void) {
+    return esp_camera_init(&preview_config);
+}
 
-    esp_err_t err = esp_camera_init(&camera_config);
-    if (err != ESP_OK) {
-        return err;
+esp_err_t camera_set_preview_mode(void) {
+    return esp_camera_reconfigure(&preview_config);
+}
+
+esp_err_t camera_set_photo_mode(void) {
+    camera_config_t photo_config = preview_config;
+    photo_config.pixel_format = PIXFORMAT_JPEG;
+    photo_config.frame_size = FRAMESIZE_SVGA;
+    photo_config.jpeg_quality = 10;
+
+    return esp_camera_reconfigure(&photo_config);
+}
+
+esp_err_t camera_discard_frames(uint8_t count) {
+    for (int i = 0; i < count; i++) {
+        camera_fb_t *frame = esp_camera_fb_get();
+        
+        if (frame == NULL) {
+            return ESP_FAIL;
+        }
+
+        esp_camera_fb_return(frame);
     }
     return ESP_OK;
 }

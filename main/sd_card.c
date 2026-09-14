@@ -1,13 +1,9 @@
-#include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include "img_converters.h"
 
 #include "sd_card.h"
-#include "driver/gpio.h"
+
 #include "driver/sdmmc_host.h"
 #include "esp_vfs_fat.h"
-#include <esp_camera.h>
 
 #define SD_PIN_CMD 38 
 #define SD_PIN_CLK 39
@@ -33,63 +29,40 @@ esp_err_t init_sd_card(void) {
     return ESP_OK;
 }
 
-// esp_err_t save_photo_to_sd(camera_fb_t *pic) {
-
-//     char photo_name[50];
-//     snprintf(photo_name, sizeof(photo_name), "/sdcard/pic_%lld.rgb565", (long long)pic->timestamp.tv_sec);
-
-//     FILE *file = fopen(photo_name, "wb");
-//     if (file == NULL) {
-//         return ESP_FAIL;
-//     }
-
-//     size_t written = fwrite(pic->buf, 1, pic->len, file);
-//     int close_result = fclose(file);
-
-//     if (written != pic->len || close_result != 0) {
-//         return ESP_FAIL;
-//     }
-
-//     return ESP_OK;
-// }
-
 esp_err_t save_photo_to_sd(camera_fb_t *pic) {
+    if (
+        pic == NULL ||
+        pic->buf == NULL ||
+        pic->len == 0 ||
+        pic->format != PIXFORMAT_JPEG
+    ) {
+        return ESP_ERR_INVALID_ARG;
+    }
 
     char photo_name[50];
-    snprintf(photo_name, sizeof(photo_name), "/sdcard/pic_%lld.jpg", (long long)pic->timestamp.tv_sec);
-
-    uint8_t *jpeg_buffer = NULL;
-    size_t jpeg_length = 0;
-
-    bool converted = frame2jpg(
-        pic,
-        80,
-        &jpeg_buffer,
-        &jpeg_length
+    snprintf(
+        photo_name,
+        sizeof(photo_name), 
+        "/sdcard/pic_%lld_%06ld.jpg", 
+        (long long)pic->timestamp.tv_sec,
+        (long)pic->timestamp.tv_usec
     );
-
-    if (!converted) {
-        return ESP_FAIL;
-    }
 
     FILE *file = fopen(photo_name, "wb");
     if (file == NULL) {
-        free(jpeg_buffer);
         return ESP_FAIL;
     }
 
     size_t written = fwrite(
-        jpeg_buffer,
+        pic->buf,
         1,
-        jpeg_length,
+        pic->len,
         file
     );
 
     int close_result = fclose(file);
 
-    free(jpeg_buffer);
-
-    if (written != jpeg_length || close_result != 0) {
+    if (written != pic->len || close_result != 0) {
         return ESP_FAIL;
     }
 
