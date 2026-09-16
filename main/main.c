@@ -10,6 +10,7 @@
 
 #include "camera_capture.h"
 #include "lcd_display.h"
+#include "button.h"
 #include "sd_card.h"
 
 void app_main(void)
@@ -19,6 +20,8 @@ void app_main(void)
     ESP_ERROR_CHECK(init_lcd());
 
     ESP_ERROR_CHECK(init_touch());
+
+    ESP_ERROR_CHECK(init_shutter_button());
 
     ESP_ERROR_CHECK(init_sd_card());
 
@@ -33,7 +36,15 @@ void app_main(void)
 
         bool touched = lcd_touch_read(&x, &y, &strength);
 
-        if (touched && !was_touched) {
+        bool touch_requested = touched && !was_touched;
+        bool button_requested = shutter_button_take_request();
+        bool capture_requested = touch_requested || button_requested;
+
+        if (button_requested) {
+            printf("Button pressed.");
+        }
+
+        if (touch_requested) {
             printf(
                 "Touch: x=%u, y=%u, pressure=%u\n",
                 x,
@@ -57,7 +68,7 @@ void app_main(void)
             )
         );
 
-        if (touched && !was_touched) {
+        if (capture_requested) {
             esp_camera_fb_return(pic);
 
             esp_err_t photo_error = camera_set_photo_mode();
@@ -83,6 +94,8 @@ void app_main(void)
 
             ESP_ERROR_CHECK(camera_set_preview_mode());
             ESP_ERROR_CHECK(camera_discard_frames(3));
+
+            (void)shutter_button_take_request();
             
             was_touched = touched;
             continue;
