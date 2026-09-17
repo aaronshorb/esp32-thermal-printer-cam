@@ -1,4 +1,7 @@
+#include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <dirent.h>
 
 #include "sd_card.h"
 
@@ -8,6 +11,9 @@
 #define SD_PIN_CMD 38 
 #define SD_PIN_CLK 39
 #define SD_PIN_D0  40
+
+static uint32_t next_photo_number = 1;
+static esp_err_t find_next_photo_number(void);
 
 esp_err_t init_sd_card(void) {
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
@@ -26,7 +32,7 @@ esp_err_t init_sd_card(void) {
         return err;
     }
 
-    return ESP_OK;
+    return find_next_photo_number();
 }
 
 esp_err_t save_photo_to_sd(camera_fb_t *pic) {
@@ -43,9 +49,8 @@ esp_err_t save_photo_to_sd(camera_fb_t *pic) {
     snprintf(
         photo_name,
         sizeof(photo_name), 
-        "/sdcard/pic_%lld_%06ld.jpg", 
-        (long long)pic->timestamp.tv_sec,
-        (long)pic->timestamp.tv_usec
+        "/sdcard/esp32_cam_%06" PRIu32 ".jpg", 
+        next_photo_number
     );
 
     FILE *file = fopen(photo_name, "wb");
@@ -66,5 +71,52 @@ esp_err_t save_photo_to_sd(camera_fb_t *pic) {
         return ESP_FAIL;
     }
 
+    next_photo_number++;
+    
+    printf("Photo name: %s\n", photo_name);
+
+    return ESP_OK;
+}
+
+static bool get_photo_number(const char *filename, uint32_t *photo_number) {
+    int end = 0;
+
+    if (sscanf(
+        filename,
+        "esp32_cam_%" SCNu32 ".jpg%n",
+        photo_number,
+        &end
+    ) != 1) {
+        return false;
+    }
+
+    return filename[end] == '\0';
+}
+
+static esp_err_t find_next_photo_number(void) {
+    DIR *dir = opendir("/sdcard");
+
+    if (dir == NULL) {
+        return ESP_FAIL;
+    }
+
+    uint32_t max_photo_number = 0;
+
+    struct dirent *de;
+    while ((de = readdir(dir)) != NULL) {
+        uint32_t photo_number;
+
+        if (!get_photo_number(de->d_name, &photo_number)) {
+            continue;
+        }
+
+        if (photo_number > max_photo_number) {
+            max_photo_number = photo_number;
+        }
+    }
+
+    next_photo_number = max_photo_number + 1;
+    
+    closedir(dir);
     return ESP_OK;
 }
