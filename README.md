@@ -90,13 +90,8 @@ main/
   sd_card.c           SD card mounting and JPEG saving
 ```
 
-## Current limitations
-
-- Timestamp filenames may repeat after restarting the ESP32 and could overwrite an existing photo.
-
 ## Planned features
 
-- Sequential photo filenames
 - Improved capture feedback
 - Touchscreen calibration
 - Monochrome photo conversion for thermal printing and support for thermal printer
