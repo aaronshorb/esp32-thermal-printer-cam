@@ -1,20 +1,22 @@
 # ESP32-S3 Camera
 
-An ESP32 camera project that displays a live camera preview on an LCD and captures a JPEG to microSD card when the touchscreen is pressed.
+An ESP32 camera project that displays a live camera preview on an LCD and captures a JPEG to microSD card when the touchscreen or button is pressed. Captured photos are converted into dithered monochrome images.
 
 The project is intended to later support printing photos on a thermal printer.
 
 ## Features
 
 - Live QVGA RGB565 camera preview
-- Touch-triggered SVGA JPEG capture saved to microSD card
+- Touch and button-triggered SVGA JPEG capture saved to microSD card
 - Automatic return to live preview after capturing a photo
+- Conversion of captured photos to dithered monochrome images
 
 ## Hardware
 
 - ESP32-S3-WROOM CAM board
 - OV3660 camera
 - ILI9341 `320 × 240` SPI LCD
+- Momentary push button
 
 ## Wiring
 
@@ -22,7 +24,7 @@ The project is intended to later support printing photos on a thermal printer.
 
 The OV3660 connects through the board's built-in ribbon connector, and the microSD card uses the integrated card slot.
 
-The camera's GPIO assignments are defined in `main/camera_pins.h`. The SD card GPIO assignments are defined in `main/sd_card.c`.
+The camera's GPIO assignments are defined in `main/camera_pins.h`. The SD card GPIO assignments are defined in `main/sd_card.c`. The shutter button connects between GPIO 2 and GND and uses the ESP32's internal pull-up resistor.
 
 ### LCD and touchscreen pins
 
@@ -46,6 +48,7 @@ The camera's GPIO assignments are defined in `main/camera_pins.h`. The SD card G
 ## Dependencies
 
 - `espressif/esp32-camera`
+- `espressif/button`
 - `espressif/esp_lcd_ili9341`
 - `atanisoft/esp_lcd_touch_xpt2046`
 
@@ -66,32 +69,36 @@ At startup, the application initializes:
 1. Camera
 2. LCD
 3. Touchscreen
-4. SD card
+4. Push button
+5. SD card
 
 The camera preview operates in QVGA RGB565 mode and sends each frame directly to the LCD.
 
-When the touchscreen is pressed:
+When the touchscreen or button is pressed:
 
 1. The current preview framebuffer is returned.
 2. The camera switches to SVGA JPEG mode.
 3. Warm-up frames are discarded.
-4. A JPEG photo is captured.
-5. The JPEG data is saved directly to the SD card.
-6. The camera switches back to QVGA RGB565 preview mode.
-7. Additional warm-up frames are discarded before preview resumes.
+4. A JPEG photo is captured and saved to SD card.
+5. The JPEG is decoded to RGB565.
+6. The image is converted to grayscale and then dithered to monochrome.
+7. The camera switches back to QVGA RGB565 preview mode.
+8. Additional warm-up frames are discarded before preview resumes.
 
 ## Project structure
 
 ```text
 main/
-  main.c              Application initialization and main capture loop
-  camera_capture.c    Camera configuration and mode switching
-  lcd_display.c       LCD drawing and touchscreen handling
-  sd_card.c           SD card mounting and JPEG saving
+  main.c                Application initialization and control flow
+  camera_capture.c      Camera configuration and mode switching
+  lcd_display.c         LCD drawing and touchscreen handling
+  button.c              Shutter button handling
+  sd_card.c             SD card mounting and JPEG saving
+  image_processing.c    Image conversion and dithering
 ```
 
 ## Planned features
 
 - Improved capture feedback
 - Touchscreen calibration
-- Monochrome photo conversion for thermal printing and support for thermal printer
+- Support for thermal printer

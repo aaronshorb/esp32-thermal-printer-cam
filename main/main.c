@@ -12,6 +12,7 @@
 #include "lcd_display.h"
 #include "button.h"
 #include "sd_card.h"
+#include "image_processing.h"
 
 void app_main(void)
 {
@@ -71,25 +72,29 @@ void app_main(void)
         if (capture_requested) {
             esp_camera_fb_return(pic);
 
-            esp_err_t photo_error = camera_set_photo_mode();
+            esp_err_t err = camera_set_photo_mode();
 
-            if (photo_error == ESP_OK) {
-                photo_error = camera_discard_frames(3);
+            if (err == ESP_OK) {
+                err = camera_discard_frames(3);
             }
 
-            if (photo_error == ESP_OK) {
+            if (err == ESP_OK) {
                 camera_fb_t *photo = esp_camera_fb_get();
 
                 if (photo == NULL) {
-                    photo_error = ESP_FAIL;
+                    err = ESP_FAIL;
                 } else {
-                    photo_error = save_photo_to_sd(photo);
+                    err = save_photo_to_sd(photo);
+
+                    if (err == ESP_OK) {
+                        err = prepare_image_for_printing(photo);
+                    }
                     esp_camera_fb_return(photo);
                 }
             }
 
-            if (photo_error != ESP_OK) {
-                printf("Failed to save photo: %s\n", esp_err_to_name(photo_error));
+            if (err != ESP_OK) {
+                printf("Failed to save or process photo: %s\n", esp_err_to_name(err));
             }
 
             ESP_ERROR_CHECK(camera_set_preview_mode());
