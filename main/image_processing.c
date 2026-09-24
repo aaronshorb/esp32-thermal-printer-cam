@@ -267,8 +267,69 @@ static esp_err_t floyd_steinberg_dither(
     return ESP_OK;
 }
 
+static esp_err_t convert_monochrome_to_1bit_bitmap(
+    const uint8_t *monochrome,
+    size_t width,
+    size_t height,
+    uint8_t **out_bitmap,
+    size_t *out_length
+) {
+    if (
+        monochrome == NULL ||
+        out_bitmap == NULL ||
+        out_length == NULL ||
+        width == 0 ||
+        height == 0
+    ) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    *out_bitmap = NULL;
+    *out_length = 0;
+
+    size_t bytes_per_row = (width + 7) / 8;
+    size_t bitmap_length = bytes_per_row * height;
+
+    uint8_t *bitmap = malloc(bitmap_length);
+
+    if (bitmap == NULL) {
+        return ESP_ERR_NO_MEM;
+    }
+
+    for (size_t y = 0; y < height; y++) {
+        for (size_t x = 0; x < bytes_per_row; x++) {
+            uint8_t byte_val = 0;
+
+            for (size_t bit = 0; bit < 8; bit++) {
+                size_t pixel_x = x * 8 + bit;
+                
+                if (pixel_x >= width) {
+                    break;
+                }
+
+                size_t source_index = y * width + pixel_x;
+
+                bool pixel_is_black = monochrome[source_index] < 128;
+
+                if (pixel_is_black) {
+                    byte_val |= (uint8_t)(0x80 >> bit);
+                }
+            }
+
+            bitmap[y * bytes_per_row + x] = byte_val;
+        }
+    }
+
+    *out_bitmap = bitmap;
+    *out_length = bitmap_length;
+
+    return ESP_OK;
+}
+
 esp_err_t prepare_image_for_printing(
-    const camera_fb_t *jpeg
+    const camera_fb_t *jpeg,
+    uint8_t **out_bitmap,
+    size_t *out_length
 ) {
     uint16_t *rgb565 = NULL;
     uint8_t *grayscale = NULL;
@@ -318,11 +379,27 @@ esp_err_t prepare_image_for_printing(
         return err;
     }
 
+    err = convert_monochrome_to_1bit_bitmap(
+        grayscale,
+        PRINT_IMAGE_WIDTH,
+        jpeg->height / 2,
+        out_bitmap,
+        out_length
+    );
+
+
+
+    if (err != ESP_OK) {
+        free(grayscale);
+        return err;
+    }
     err = save_grayscale_test(
         grayscale,
         PRINT_IMAGE_WIDTH,
         jpeg->height / 2
     );
+
+
 
     free(grayscale);
 

@@ -10,7 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-#define BUTTON_PIN GPIO_NUM_2
+#define BUTTON_PIN GPIO_NUM_45
 
 static button_handle_t shutter_button;
 static SemaphoreHandle_t capture_request;

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -13,6 +14,7 @@
 #include "button.h"
 #include "sd_card.h"
 #include "image_processing.h"
+#include "thermal_printer.h"
 
 void app_main(void)
 {
@@ -25,6 +27,8 @@ void app_main(void)
     ESP_ERROR_CHECK(init_shutter_button());
 
     ESP_ERROR_CHECK(init_sd_card());
+
+    ESP_ERROR_CHECK(init_thermal_printer());
 
     bool was_touched = false;
     ESP_ERROR_CHECK(camera_discard_frames(3));
@@ -40,10 +44,6 @@ void app_main(void)
         bool touch_requested = touched && !was_touched;
         bool button_requested = shutter_button_take_request();
         bool capture_requested = touch_requested || button_requested;
-
-        if (button_requested) {
-            printf("Button pressed.");
-        }
 
         if (touch_requested) {
             printf(
@@ -84,17 +84,36 @@ void app_main(void)
                 if (photo == NULL) {
                     err = ESP_FAIL;
                 } else {
+                    uint8_t *bitmap = NULL;
+                    size_t bitmap_length = 0;
+                    
                     err = save_photo_to_sd(photo);
 
                     if (err == ESP_OK) {
-                        err = prepare_image_for_printing(photo);
+                        err = prepare_image_for_printing(
+                            photo,
+                            &bitmap,
+                            &bitmap_length
+                        );
                     }
+                    
                     esp_camera_fb_return(photo);
+
+                    if (err == ESP_OK) {
+                        err = thermal_printer_print_bitmap(
+                            bitmap,
+                            bitmap_length,
+                            384,
+                            300
+                        );
+                    }
+
+                    free(bitmap);
                 }
             }
 
             if (err != ESP_OK) {
-                printf("Failed to save or process photo: %s\n", esp_err_to_name(err));
+                printf("Photo capture failed: %s\n", esp_err_to_name(err));
             }
 
             ESP_ERROR_CHECK(camera_set_preview_mode());
