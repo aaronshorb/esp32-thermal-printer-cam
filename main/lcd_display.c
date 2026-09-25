@@ -13,6 +13,10 @@
 #include "esp_lcd_touch.h"
 #include "esp_lcd_touch_xpt2046.h"
 
+#define TOUCH_X_MIN 23
+#define TOUCH_X_MAX 307
+#define TOUCH_Y_MIN 17
+#define TOUCH_Y_MAX 227
 
 static SemaphoreHandle_t lcd_transfer_done;
 
@@ -101,7 +105,18 @@ esp_err_t init_lcd(void)
         return err;
     }
 
-    if ((err = esp_lcd_panel_swap_xy(panel_handle, true)) != ESP_OK) {
+    if ((err = esp_lcd_panel_swap_xy(
+        panel_handle,
+        true
+    )) != ESP_OK) {
+        return err;
+    }
+
+    if ((err = esp_lcd_panel_mirror(
+        panel_handle,
+        true,
+        true
+    )) != ESP_OK) {
         return err;
     }
 
@@ -149,8 +164,8 @@ esp_err_t init_touch(void)
     }
 
     esp_lcd_touch_config_t touch_config = {
-        .x_max = LCD_WIDTH,
-        .y_max = LCD_HEIGHT,
+        .x_max = LCD_HEIGHT,
+        .y_max = LCD_WIDTH,
         .rst_gpio_num = -1,
         .int_gpio_num = TOUCH_PIN_IRQ,
         .levels = {
@@ -158,9 +173,9 @@ esp_err_t init_touch(void)
             .interrupt = 0,
         },
         .flags = {
-            .swap_xy = false,
-            .mirror_x = false,
-            .mirror_y = false,
+            .swap_xy = true,
+            .mirror_x = true,
+            .mirror_y = true,
         },
     };
 
@@ -168,6 +183,27 @@ esp_err_t init_touch(void)
         touch_io_handle,
         &touch_config,
         &touch_handle
+    );
+}
+
+static uint16_t calibrate_axis(
+    uint16_t value,
+    uint16_t minimum,
+    uint16_t maximum,
+    uint16_t output_size
+) {
+    if (value <= minimum) {
+        return 0;
+    }
+
+    if (value >= maximum) {
+        return output_size - 1;
+    }
+
+    return (uint16_t)(
+        (uint32_t)(value - minimum) *
+        (output_size - 1) /
+        (maximum - minimum)
     );
 }
 
@@ -199,8 +235,20 @@ bool lcd_touch_read(
         return false;
     }
 
-    *x = point.x;
-    *y = point.y;
+    *x = calibrate_axis(
+        point.x,
+        TOUCH_X_MIN,
+        TOUCH_X_MAX,
+        LCD_WIDTH
+    );
+
+    *y = calibrate_axis(
+        point.y,
+        TOUCH_Y_MIN,
+        TOUCH_Y_MAX,
+        LCD_HEIGHT
+    );
+    
     *strength = point.strength;
 
     return true;

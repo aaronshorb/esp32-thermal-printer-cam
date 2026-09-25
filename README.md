@@ -116,6 +116,5 @@ main/
 ## Planned features
 
 - Improved capture feedback
-- Touchscreen calibration
 - Touchscreen menu for configuring the self timer, dithering algorithm, photo saving, and print options
 - Printer status monitoring

@@ -42,8 +42,6 @@ void app_main(void)
         bool touched = lcd_touch_read(&x, &y, &strength);
 
         bool touch_requested = touched && !was_touched;
-        bool button_requested = shutter_button_take_request();
-        bool capture_requested = touch_requested || button_requested;
 
         if (touch_requested) {
             printf(
@@ -68,6 +66,9 @@ void app_main(void)
                 pic->height
             )
         );
+
+        bool button_requested = shutter_button_take_request();
+        bool capture_requested = button_requested;
 
         if (capture_requested) {
             esp_camera_fb_return(pic);
@@ -96,6 +97,8 @@ void app_main(void)
                             &bitmap_length
                         );
                     }
+
+                    printf("JPEG size: %zu bytes\n", photo->len);
                     
                     esp_camera_fb_return(photo);
 

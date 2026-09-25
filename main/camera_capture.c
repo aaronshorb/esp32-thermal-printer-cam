@@ -37,21 +37,56 @@ static const camera_config_t preview_config = {
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
 };
 
+static esp_err_t rotate_camera(void) {
+    sensor_t *sensor = esp_camera_sensor_get();
+
+    if (sensor == NULL) {
+        return ESP_FAIL;
+    }
+
+    if (
+        sensor->set_hmirror(sensor, 1) != 0 ||
+        sensor->set_vflip(sensor, 1) != 0
+    ) {
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
+
 esp_err_t init_camera(void) {
-    return esp_camera_init(&preview_config);
+    esp_err_t err = esp_camera_init(&preview_config);
+
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    return rotate_camera();
 }
 
 esp_err_t camera_set_preview_mode(void) {
-    return esp_camera_reconfigure(&preview_config);
+    esp_err_t err = esp_camera_reconfigure(&preview_config);
+
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    return rotate_camera();
 }
 
 esp_err_t camera_set_photo_mode(void) {
     camera_config_t photo_config = preview_config;
     photo_config.pixel_format = PIXFORMAT_JPEG;
     photo_config.frame_size = FRAMESIZE_SVGA;
-    photo_config.jpeg_quality = 10;
+    photo_config.jpeg_quality = 8;
 
-    return esp_camera_reconfigure(&photo_config);
+    esp_err_t err = esp_camera_reconfigure(&photo_config);
+
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    return rotate_camera();
 }
 
 esp_err_t camera_discard_frames(uint8_t count) {
