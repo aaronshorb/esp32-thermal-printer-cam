@@ -1,11 +1,11 @@
-# ESP32-S3 Camera
+# ESP32 Thermal Printer Camera
 
-An ESP32-S3 camera project that displays a live camera preview on an LCD and captures JPEG photos to microSD when the touchscreen or shutter button is pressed. Captured photos are converted into dithered monochrome bitmaps and printed on a 58mm thermal printer.
+An ESP32-S3 camera project that displays a live camera preview on an LCD and captures JPEG photos to microSD when the shutter button is pressed. Captured photos are converted into dithered monochrome bitmaps and printed on a 58mm thermal printer.
 
 ## Features
 
 - Live QVGA RGB565 camera preview
-- Touch and button-triggered SVGA JPEG capture saved to microSD card
+- Button-triggered SVGA JPEG capture saved to microSD card
 - Conversion of captured photos to dithered monochrome images
 - Printing on a CSN-A2 thermal printer over UART
 - Automatic return to live preview after capturing and printing a photo
@@ -16,6 +16,7 @@ An ESP32-S3 camera project that displays a live camera preview on an LCD and cap
 - OV3660 camera
 - ILI9341 `320 × 240` SPI LCD
 - Momentary push button
+- On/Off switch
 - CASHINO CSN-A2 TTL thermal printer
 - Two 18650 batteries and a battery holder
 - MP1584EN buck converter
@@ -85,9 +86,9 @@ At startup, the application initializes:
 5. SD card
 6. Thermal printer
 
-The camera preview operates in QVGA RGB565 mode and sends each frame directly to the LCD.
+The camera live preview operates in QVGA RGB565 mode.
 
-When the touchscreen or button is pressed:
+When the shutter button is pressed:
 
 1. The current preview framebuffer is returned.
 2. The camera switches to SVGA JPEG mode.
@@ -97,7 +98,7 @@ When the touchscreen or button is pressed:
 6. The image is converted to grayscale and then dithered to monochrome.
 7. The monochrome image is packed into a 1-bit bitmap.
 8. The bitmap is sent to the thermal printer.
-9. The camera switches back to QVGA RGB565 preview mode.
+9. The camera switches back to preview mode.
 10. Additional warm-up frames are discarded before preview resumes.
 
 ## Project structure

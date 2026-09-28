@@ -45,7 +45,7 @@ static esp_err_t rotate_camera(void) {
     }
 
     if (
-        sensor->set_hmirror(sensor, 1) != 0 ||
+        sensor->set_hmirror(sensor, 0) != 0 ||
         sensor->set_vflip(sensor, 1) != 0
     ) {
         return ESP_FAIL;
