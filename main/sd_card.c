@@ -8,7 +8,7 @@
 #include "driver/sdmmc_host.h"
 #include "esp_vfs_fat.h"
 
-#define SD_PIN_CMD 38 
+#define SD_PIN_CMD 38
 #define SD_PIN_CLK 39
 #define SD_PIN_D0  40
 
@@ -48,8 +48,8 @@ esp_err_t save_photo_to_sd(camera_fb_t *pic) {
     char photo_name[50];
     snprintf(
         photo_name,
-        sizeof(photo_name), 
-        "/sdcard/esp32_cam_%06" PRIu32 ".jpg", 
+        sizeof(photo_name),
+        "/sdcard/esp32_cam_%06" PRIu32 ".jpg",
         next_photo_number
     );
 
@@ -72,7 +72,7 @@ esp_err_t save_photo_to_sd(camera_fb_t *pic) {
     }
 
     next_photo_number++;
-    
+
     printf("Photo name: %s\n", photo_name);
 
     return ESP_OK;

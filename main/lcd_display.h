@@ -18,4 +18,12 @@ bool lcd_touch_read(
     uint16_t *strength
 );
 
+esp_err_t lcd_draw_rgb565_region(
+    uint16_t *pixels,
+    uint16_t x,
+    uint16_t y,
+    uint16_t width,
+    uint16_t height
+);
+
 #endif

@@ -27,7 +27,7 @@ static bool IRAM_ATTR lcd_on_transfer_done(
     esp_lcd_panel_io_handle_t panel_io,
     esp_lcd_panel_io_event_data_t *event_data,
     void *user_ctx
-) 
+)
 {
     SemaphoreHandle_t semaphore = (SemaphoreHandle_t)user_ctx;
     BaseType_t higher_priority_task_woken = pdFALSE;
@@ -62,11 +62,11 @@ esp_err_t init_lcd(void)
         return err;
     }
 
-    esp_lcd_panel_io_spi_config_t io_config = 
+    esp_lcd_panel_io_spi_config_t io_config =
         ILI9341_PANEL_IO_SPI_CONFIG(
-            LCD_PIN_CS, 
-            LCD_PIN_DC, 
-            lcd_on_transfer_done, 
+            LCD_PIN_CS,
+            LCD_PIN_DC,
+            lcd_on_transfer_done,
             lcd_transfer_done);
 
     io_config.flags.psram_dma_direct = true;
@@ -143,7 +143,7 @@ esp_err_t lcd_draw_rgb565(const uint8_t *pixels, uint16_t width, uint16_t height
         ) != pdTRUE) {
             return ESP_ERR_TIMEOUT;
         }
-    
+
         return ESP_OK;
 }
 
@@ -252,4 +252,35 @@ bool lcd_touch_read(
     *strength = point.strength;
 
     return true;
+}
+
+esp_err_t lcd_draw_rgb565_region(
+    uint16_t *pixels,
+    uint16_t x,
+    uint16_t y,
+    uint16_t width,
+    uint16_t height
+)
+{
+    esp_err_t err = esp_lcd_panel_draw_bitmap(
+        panel_handle,
+        x,
+        y,
+        x + width,
+        y + height,
+        pixels
+    );
+
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    if (xSemaphoreTake(
+        lcd_transfer_done,
+        pdMS_TO_TICKS(1000)
+    ) != pdTRUE) {
+        return ESP_ERR_TIMEOUT;
+    }
+
+    return ESP_OK;
 }

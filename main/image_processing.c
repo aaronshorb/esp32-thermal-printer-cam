@@ -21,7 +21,7 @@ static esp_err_t jpeg_to_rgb565(
 
     *out_rgb565 = NULL;
 
-    size_t pixel_count = 
+    size_t pixel_count =
         (size_t)((jpeg->width / 2) * (jpeg->height / 2));
 
     uint16_t *rgb565 = malloc(
@@ -61,7 +61,7 @@ static esp_err_t rgb565_to_cropped_grayscale(
     size_t pixel_count = PRINT_IMAGE_WIDTH * source_height;
 
     uint8_t *grayscale = malloc(pixel_count * sizeof(*grayscale));
-    
+
     if (grayscale == NULL) {
         return ESP_ERR_NO_MEM;
     }
@@ -143,68 +143,68 @@ static esp_err_t save_grayscale_test(
     return ESP_OK;
 }
 
-// static esp_err_t bayer_dither(
-//     uint8_t *grayscale,
-//     size_t width,
-//     size_t height
-// )
-// {
-//     if (grayscale == NULL || width == 0 || height == 0) {
-//         return ESP_ERR_INVALID_ARG;
-//     }
+static esp_err_t bayer_dither(
+    uint8_t *grayscale,
+    size_t width,
+    size_t height
+)
+{
+    if (grayscale == NULL || width == 0 || height == 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
 
-//     static const uint8_t bayer[4][4] = {
-//         {  0,  8,  2, 10 },
-//         { 12,  4, 14,  6 },
-//         {  3, 11,  1,  9 },
-//         { 15,  7, 13,  5 }
-//     };
+    static const uint8_t bayer[4][4] = {
+        {  0,  8,  2, 10 },
+        { 12,  4, 14,  6 },
+        {  3, 11,  1,  9 },
+        { 15,  7, 13,  5 }
+    };
 
-//     for (size_t y = 0; y < height; y++) {
-//         for (size_t x = 0; x < width; x++) {
-//             size_t index = y * width + x;
+    for (size_t y = 0; y < height; y++) {
+        for (size_t x = 0; x < width; x++) {
+            size_t index = y * width + x;
 
-//             uint8_t threshold =
-//                 bayer[y % 4][x % 4] * 16 + 8;
+            uint8_t threshold =
+                bayer[y % 4][x % 4] * 16 + 8;
 
-//             grayscale[index] =
-//                 grayscale[index] > threshold ? 255 : 0;
-//         }
-//     }
+            grayscale[index] =
+                grayscale[index] > threshold ? 255 : 0;
+        }
+    }
 
-//     return ESP_OK;
-// }
+    return ESP_OK;
+}
 
-// static esp_err_t clustered_dot_dither(
-//     uint8_t *grayscale,
-//     size_t width,
-//     size_t height
-// ) {
-//     if (grayscale == NULL || width == 0 || height == 0) {
-//         return ESP_ERR_INVALID_ARG;
-//     }
+static esp_err_t clustered_dot_dither(
+    uint8_t *grayscale,
+    size_t width,
+    size_t height
+) {
+    if (grayscale == NULL || width == 0 || height == 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
 
-//     static const uint8_t clustered[4][4] = {
-//         { 12,  5,  6, 13 },
-//         {  4,  0,  1,  7 },
-//         { 11,  3,  2,  8 },
-//         { 15, 10,  9, 14 }
-//     };
+    static const uint8_t clustered[4][4] = {
+        { 12,  5,  6, 13 },
+        {  4,  0,  1,  7 },
+        { 11,  3,  2,  8 },
+        { 15, 10,  9, 14 }
+    };
 
-//     for (size_t y = 0; y < height; y++) {
-//         for (size_t x = 0; x < width; x++) {
-//             size_t index = y * width + x;
+    for (size_t y = 0; y < height; y++) {
+        for (size_t x = 0; x < width; x++) {
+            size_t index = y * width + x;
 
-//             uint8_t threshold =
-//                 clustered[y % 4][x % 4] * 16 + 8;
-            
-//                 grayscale[index] = 
-//                     grayscale[index] > threshold ? 255 : 0;
-//         }
-//     }
+            uint8_t threshold =
+                clustered[y % 4][x % 4] * 16 + 8;
 
-//     return ESP_OK;
-// }
+                grayscale[index] =
+                    grayscale[index] > threshold ? 255 : 0;
+        }
+    }
+
+    return ESP_OK;
+}
 
 static uint8_t clamp_pixel(int value) {
     return value < 0 ? 0 : (value > 255 ? 255 : value);
@@ -302,7 +302,7 @@ static esp_err_t convert_monochrome_to_1bit_bitmap(
 
             for (size_t bit = 0; bit < 8; bit++) {
                 size_t pixel_x = x * 8 + bit;
-                
+
                 if (pixel_x >= width) {
                     break;
                 }
@@ -329,7 +329,8 @@ static esp_err_t convert_monochrome_to_1bit_bitmap(
 esp_err_t prepare_image_for_printing(
     const camera_fb_t *jpeg,
     uint8_t **out_bitmap,
-    size_t *out_length
+    size_t *out_length,
+    const capture_settings_t *settings
 ) {
     uint16_t *rgb565 = NULL;
     uint8_t *grayscale = NULL;
@@ -356,23 +357,35 @@ esp_err_t prepare_image_for_printing(
         return err;
     }
 
-    // err = bayer_dither(
-    //     grayscale,
-    //     PRINT_IMAGE_WIDTH,
-    //     jpeg->height / 2
-    // );
+    switch (settings->dithering) {
+        case DITHERING_FLOYD_STEINBERG:
+            err = floyd_steinberg_dither(
+                grayscale,
+                PRINT_IMAGE_WIDTH,
+                jpeg->height / 2
+            );
+            break;
 
-    // err = clustered_dot_dither(
-    //     grayscale,
-    //     PRINT_IMAGE_WIDTH,
-    //     jpeg->height / 2
-    // );
+        case DITHERING_BAYER:
+            err = bayer_dither(
+                grayscale,
+                PRINT_IMAGE_WIDTH,
+                jpeg->height / 2
+            );
+            break;
 
-    err = floyd_steinberg_dither(
-        grayscale,
-        PRINT_IMAGE_WIDTH,
-        jpeg->height / 2
-    );
+        case DITHERING_CLUSTERED_DOT:
+            err = clustered_dot_dither(
+                grayscale,
+                PRINT_IMAGE_WIDTH,
+                jpeg->height / 2
+            );
+            break;
+            
+        default:
+            err = ESP_ERR_INVALID_ARG;
+            break;
+    }
 
     if (err != ESP_OK) {
         free(grayscale);
@@ -387,8 +400,6 @@ esp_err_t prepare_image_for_printing(
         out_length
     );
 
-
-
     if (err != ESP_OK) {
         free(grayscale);
         return err;
@@ -398,8 +409,6 @@ esp_err_t prepare_image_for_printing(
         PRINT_IMAGE_WIDTH,
         jpeg->height / 2
     );
-
-
 
     free(grayscale);
 

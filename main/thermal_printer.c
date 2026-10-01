@@ -45,7 +45,7 @@ esp_err_t thermal_printer_print_bitmap(
         (uint8_t)(height & 0xFF),
         (uint8_t)(height >> 8)
     };
-    
+
     esp_err_t err = thermal_printer_write(
         command,
         sizeof(command)
@@ -82,11 +82,11 @@ esp_err_t init_thermal_printer(void) {
     };
 
     esp_err_t err = uart_driver_install(
-        UART_PORT_NUM, 
-        UART_BUFFER_SIZE * 2, 
-        0, 
-        0, 
-        NULL, 
+        UART_PORT_NUM,
+        UART_BUFFER_SIZE * 2,
+        0,
+        0,
+        NULL,
         0
     );
 

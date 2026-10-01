@@ -1,14 +1,14 @@
 # ESP32 Thermal Printer Camera
 
-An ESP32-S3 camera project that displays a live camera preview on an LCD and captures JPEG photos to microSD when the shutter button is pressed. Captured photos are converted into dithered monochrome bitmaps and printed on a 58mm thermal printer.
+An ESP32-S3 camera project that displays a live camera preview on an LCD and captures JPEG photos when the shutter button is pressed. Photos can be saved to microSD, converted into dithered monochrome bitmaps, and printed on a 58mm thermal printer.
 
 ## Features
 
 - Live QVGA RGB565 camera preview
-- Button-triggered SVGA JPEG capture saved to microSD card
-- Conversion of captured photos to dithered monochrome images
-- Printing on a CSN-A2 thermal printer over UART
-- Automatic return to live preview after capturing and printing a photo
+- Button-triggered SVGA JPEG capture with optional microSD storage
+- Touchscreen controls for the timer, saving, printing, and dithering
+- Floyd–Steinberg, Bayer, and clustered-dot dithering
+- Monochrome photo printing on a CSN-A2 thermal printer over UART
 
 ## Hardware
 
@@ -77,29 +77,22 @@ idf.py flash monitor
 
 ## Operation
 
-At startup, the application initializes:
+After startup, the LCD displays a live QVGA camera preview.
 
-1. Camera
-2. LCD
-3. Touchscreen
-4. Push button
-5. SD card
-6. Thermal printer
+The touchscreen menu controls:
 
-The camera live preview operates in QVGA RGB565 mode.
+- Timer: off, 3 seconds, or 10 seconds
+- Saving to microSD: on or off
+- Thermal printing: on or off
+- Dithering: Floyd–Steinberg, Bayer, or clustered dot
 
 When the shutter button is pressed:
 
-1. The current preview framebuffer is returned.
-2. The camera switches to SVGA JPEG mode.
-3. Warm-up frames are discarded.
-4. A JPEG photo is captured and saved to SD card.
-5. The JPEG is decoded to RGB565.
-6. The image is converted to grayscale and then dithered to monochrome.
-7. The monochrome image is packed into a 1-bit bitmap.
-8. The bitmap is sent to the thermal printer.
-9. The camera switches back to preview mode.
-10. Additional warm-up frames are discarded before preview resumes.
+1. If enabled, the countdown is displayed over the live preview.
+2. The camera captures an SVGA JPEG photo.
+3. If saving is enabled, the JPEG is saved to microSD.
+4. If printing is enabled, the JPEG is converted to a dithered 1-bit bitmap and printed.
+5. The live preview resumes.
 
 ## Project structure
 
@@ -108,6 +101,7 @@ main/
   main.c                Application initialization and control flow
   camera_capture.c      Camera configuration and mode switching
   lcd_display.c         LCD drawing and touchscreen handling
+  menu.c                Touchscreen menu rendering and settings
   button.c              Shutter button handling
   sd_card.c             SD card mounting and JPEG saving
   image_processing.c    Image conversion and dithering
@@ -116,6 +110,4 @@ main/
 
 ## Planned features
 
-- Improved capture feedback
-- Touchscreen menu for configuring the self timer, dithering algorithm, photo saving, and print options
 - Printer status monitoring
