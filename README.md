@@ -10,6 +10,8 @@ An ESP32 camera project that displays a live camera preview on an LCD and captur
 
 <img src="photos/cam_menu.png" alt="camera menu" width="600">
 
+<img src="photos/dithering_ex.png" alt="dithering examples" width="600">
+
 ![camera menu gif](photos/cam_gif_menu.gif)
 
 ## Features
