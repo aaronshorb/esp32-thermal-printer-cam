@@ -1,6 +1,16 @@
 # ESP32 Thermal Printer Camera
 
-An ESP32-S3 camera project that displays a live camera preview on an LCD and captures JPEG photos when the shutter button is pressed. Photos can be saved to microSD, converted into dithered monochrome bitmaps, and printed on a 58mm thermal printer.
+An ESP32 camera project that displays a live camera preview on an LCD and captures JPEG photos when the shutter button is pressed. Photos can be saved to microSD, converted into dithered monochrome bitmaps, and printed on a thermal printer. An improvised plastic enclosure holds everything together.
+
+![camera photo gif](photos/cam_gif_photo.gif)
+
+<img src="photos/cam_front.png" alt="camera front" width="600">
+
+<img src="photos/cam_back.png" alt="camera back" width="600">
+
+<img src="photos/cam_menu.png" alt="camera menu" width="600">
+
+![camera menu gif](photos/cam_gif_menu.gif)
 
 ## Features
 
